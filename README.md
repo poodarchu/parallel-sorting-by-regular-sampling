@@ -13,11 +13,8 @@ begin
   end.
 
 实现三类并行:
-
   1)基于OpenMP的并行；
-
   2)基于MPI的并行；
-
   3)基于MPI+OpenMP的并行。
 
 数据集下载：链接: https://pan.baidu.com/s/1nvRZNO9 密码: jkmr
