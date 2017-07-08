@@ -3,17 +3,9 @@
 #include <sys/time.h>
 #include "psrs_sort.c"
 
-/* the following two definitions of DEBUGGING control whether or not
-   debugging information is written out. To put the program into
-   debugging mode, uncomment the following line: */
-/*#define DEBUGGING(_x) _x */
-/* to stop the printing of debugging information, use the following line: */
 #define DEBUGGING(_x)
 
-/* this is a comparison function for long longs that is being added
-   purely to allow the standard qsort function to be used */
-int llcompare(const void * ptr2num1, const void * ptr2num2)
-{
+int llcompare(const void * ptr2num1, const void * ptr2num2) {
   long long num1 = *((long long*) ptr2num1);
   long long num2 = *((long long*) ptr2num2);
 
@@ -25,15 +17,11 @@ int llcompare(const void * ptr2num1, const void * ptr2num2)
     return 0;
 }
 
-/* sort an array into non-decreasing order */
-void sort(long long a[], int size)
-{
+void sort(long long a[], int size) {
   qsort(a, size, sizeof(long long), llcompare);
 }
 
-/* write out an array of integers up to 'size' */
-void write_out(long long a[], int size)
-{
+void write_out(long long a[], int size) {
   int i;
 
   for ( i = 0; i < size; i++ ) {
@@ -41,10 +29,7 @@ void write_out(long long a[], int size)
   }
 }
 
-/* read a stream of long long numbers from a file.
-   the first number in the file is the number of numbers*/
-long long * read_in(char filename[], int * ptr2size)
-{
+long long * read_in(char filename[], int * ptr2size) {
   const int max_line = 1024;
   char line[max_line];
   int i;

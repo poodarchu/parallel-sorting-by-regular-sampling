@@ -13,153 +13,152 @@ using namespace std;
 #include "multimerge.h"
 #include "utilities.h"
 
-int main( int argc, char* argv[]) {
-    int my_rank, numprocs;
+int main(int argc, char* argv[]) {
+    int my_rank, num_processors;
     int thread_count;
 
-    double startwtime = 0.0, endwtime;
+    double start_t = 0.0, end_t;
 
     MPI_Init(argc, argv);
 
-    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_processors);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    thread_count = numprocs * 2;
+    thread_count = num_processors * 2;
 
-    //		 -DS nnnn to set myDataSize
-    //		 -SR nnnn to set randomSeed
-    int randomSeed = 1000;
-    int myDataSize = 4000;
-    for(int i=0;i<argc;i++) {
-        if (strcmp(argv[i],"-DS")==0) {
-            myDataSize = atoi(argv[i+1]); i++;
-        } else if (strcmp(argv[i],"-SR")==0) {
-            randomSeed = atoi(argv[i+1]); i++;
+    //		 -DS nnnn to set my_data_size
+    //		 -SR nnnn to set random_seed
+    int random_seed = 1000;
+    int my_data_size = 4000;
+    for(int i=0; i<argc; i++) {
+        if (strcmp(argv[i], "-DS") == 0) {
+            my_data_size = atoi(argv[i+1]);
+            i++;
+        } else if (strcmp(argv[i], "-SR") == 0) {
+            random_seed = atoi(argv[i+1]);
+            i++;
         }
     }
 
-    int myData[myDataSize];
-    int myDataLengths[numprocs];
-    int myDataStarts[numprocs];
+    int my_data[my_data_size];
+    int my_data_lengths[num_processors];
+    int my_data_starts[num_processors];
 
-    int pivotbuffer[numprocs*numprocs];
-    int pivotbufferSize;
+    int pivot_buffer[num_processors*num_processors];
+    int pivot_buffer_sz;
 
-    for(int i=0;i<numprocs;i++) {
-        myDataLengths[i] = myDataSize/numprocs;
-        myDataStarts[i]= i*myDataSize/numprocs;
+    for(int i = 0; i < num_processors; i++) {
+        my_data_lengths[i] = my_data_size/num_processors;
+        my_data_starts[i] = i*my_data_size/num_processors;
     }
-    myDataLengths[numprocs-1]+=(myDataSize%numprocs);
+    my_data_lengths[num_processors-1] += (my_data_size%num_processors);
 
     if (my_rank == 0) {
-        srandom(randomSeed);
-        for(int index=0; index<myDataSize; index++) {
-            myData[index] = random()% 900;
+        srandom(random_seed);
+        for(int index=0; index < my_data_size; index++) {
+            my_data[index] = random()% 900;
         }
-
-        startwtime = MPI::Wtime();
-    }
-
-    if (my_rank==0) {
-        MPI::COMM_WORLD.Scatterv(myData, myDataLengths, myDataStarts, MPI::INT, MPI_IN_PLACE, myDataLengths[my_rank], MPI::INT,0);
-    } else {
-        MPI::COMM_WORLD.Scatterv(myData, myDataLengths, myDataStarts, MPI::INT, myData, myDataLengths[my_rank], MPI::INT, 0);
-    }
-
-    qsort(myData,myDataLengths[my_rank], sizeof(int), compare_ints);
-
-    // All processors collect regular samples from sorted list Consider an offset to the myData[] index
-    for(int index=0;index<numprocs;index++) {
-        pivotbuffer[index]= myData[index*myDataLengths[my_rank]/numprocs];
-    }
-
-
-    if (my_rank==0) {
-        MPI::COMM_WORLD.Gather(MPI_IN_PLACE,numprocs, MPI::INT, pivotbuffer, numprocs, MPI::INT, 0);
-    } else {
-        MPI::COMM_WORLD.Gather(pivotbuffer, numprocs, MPI::INT, pivotbuffer, numprocs, MPI::INT, 0);
+        start_t = MPI::Wtime();
     }
 
     if (my_rank == 0) {
-        int *starts[numprocs];
-        int lengths[numprocs];
-        for(int i=0;i<numprocs;i++) {
-            starts[i]=&pivotbuffer[i*numprocs];
-            lengths[i]=numprocs;
+        MPI::COMM_WORLD.Scatterv(my_data, my_data_lengths, my_data_starts, MPI::INT, MPI_IN_PLACE, my_data_lengths[my_rank], MPI::INT,0);
+    } else {
+        MPI::COMM_WORLD.Scatterv(my_data, my_data_lengths, my_data_starts, MPI::INT, my_data, my_data_lengths[my_rank], MPI::INT, 0);
+    }
+
+    qsort(my_data,my_data_lengths[my_rank], sizeof(int), compare_ints);
+
+    // All processors collect regular samples from sorted list Consider an offset to the my_data[] index
+    for(int index=0; index < num_processors; index++) {
+        pivot_buffer[index] = my_data[index*my_data_lengths[my_rank]/num_processors];
+    }
+
+    if (my_rank == 0) {
+        MPI::COMM_WORLD.Gather(MPI_IN_PLACE,num_processors, MPI::INT, pivot_buffer, num_processors, MPI::INT, 0);
+    } else {
+        MPI::COMM_WORLD.Gather(pivot_buffer, num_processors, MPI::INT, pivot_buffer, num_processors, MPI::INT, 0);
+    }
+
+    if (my_rank == 0) {
+        int *starts[num_processors];
+        int lengths[num_processors];
+        for(int i = 0; i < num_processors; i++) {
+            starts[i] = &pivot_buffer[i*num_processors];
+            lengths[i] = num_processors;
         }
 
-        int tempbuffer[numprocs*numprocs];  // merged list
-        multimerge(starts,lengths,numprocs,tempbuffer,numprocs*numprocs);
+        int temp_buffer[num_processors*num_processors];  // merged list
+        multimerge(starts, lengths, num_processors, temp_buffer, num_processors*num_processors);
 
-        for(int i=0; i<numprocs-1; i++) {
-            pivotbuffer[i] = tempbuffer[(i+1)*numprocs];
+        for(int i = 0; i < num_processors-1; i++) {
+            pivot_buffer[i] = temp_buffer[(i+1)*num_processors];
         }
     }
 
-    MPI::COMM_WORLD.Bcast(pivotbuffer, numprocs-1, MPI::INT, 0);
+    MPI::COMM_WORLD.Bcast(pivot_buffer, num_processors-1, MPI::INT, 0);
 
-    int classStart[numprocs];
-    int classLength[numprocs];
+    int class_start[num_processors];
+    int class_length[num_processors];
 
-    int dataindex=0;
-    for(int classindex=0; classindex<numprocs-1; classindex++) {
-        classStart[classindex] = dataindex;
-        classLength[classindex]=0;
+    int data_idx = 0;
+    for(int class_idx = 0; class_idx < num_processors-1; class_idx++) {
+        class_start[class_idx] = data_idx;
+        class_length[class_idx]=0;
 
-        while((dataindex< myDataLengths[my_rank]) && (myData[dataindex]<=pivotbuffer[classindex])) {
-            classLength[classindex]++;
-            dataindex++;
+        while((data_idx< my_data_lengths[my_rank]) && (my_data[data_idx]<=pivot_buffer[class_idx])) {
+            class_length[class_idx]++;
+            data_idx++;
         }
     }
 
-    classStart[numprocs-1] = dataindex;
-    classLength[numprocs-1] = myDataLengths[my_rank] - dataindex;
+    class_start[num_processors-1] = data_idx;
+    class_length[num_processors-1] = my_data_lengths[my_rank] - data_idx;
 
-    int recvbuffer[myDataSize];
-    int recvLengths[numprocs];
-    int recvStarts[numprocs];
+    int recv_buffer[my_data_size];
+    int recv_lengths[num_processors];
+    int recv_starts[num_processors];
 
-    for(int iprocessor=0; iprocessor<numprocs; iprocessor++) {
-        MPI::COMM_WORLD.Gather(&classLength[iprocessor], 1, MPI::INT, recvLengths, 1, MPI::INT, iprocessor);
+    for(int iprocessor = 0; iprocessor < num_processors; iprocessor++) {
+        MPI::COMM_WORLD.Gather(&class_length[iprocessor], 1, MPI::INT, recv_lengths, 1, MPI::INT, iprocessor);
         if (my_rank == iprocessor) {
-            recvStarts[0]=0;
-            for(int i=1;i<numprocs; i++) {
-                recvStarts[i] = recvStarts[i-1]+recvLengths[i-1];
+            recv_starts[0]=0;
+            for(int i = 1; i < num_processors; i++) {
+                recv_starts[i] = recv_starts[i-1] + recv_lengths[i-1];
             }
         }
-        MPI::COMM_WORLD.Gatherv(&myData[classStart[iprocessor]], classLength[iprocessor], MPI::INT, recvbuffer, recvLengths, recvStarts, MPI::INT, iprocessor);
+        MPI::COMM_WORLD.Gatherv(&my_data[class_start[iprocessor]], class_length[iprocessor], MPI::INT, recv_buffer, recv_lengths, recv_starts, MPI::INT, iprocessor);
     }
 
-    int *mmStarts[numprocs];
+    int *mm_starts[num_processors];
 
-    for(int i=0;i<numprocs;i++) {
-        mmStarts[i]=recvbuffer+recvStarts[i];
+    for(int i = 0; i < num_processors; i++) {
+        mm_starts[i] = recv_buffer+recv_starts[i];
     }
 
-    multimerge(mmStarts,recvLengths,numprocs,myData,myDataSize);
+    multimerge(mm_starts, recv_lengths, num_processors, my_data, my_data_size);
 
-    int mysendLength = recvStarts[numprocs-1] + recvLengths[numprocs-1];
+    int mysendLength = recv_starts[num_processors-1] + recv_lengths[num_processors-1];
 
-    int sendLengths[numprocs];
-    int sendStarts[numprocs];
+    int sendLengths[num_processors];
+    int sendStarts[num_processors];
 
     MPI::COMM_WORLD.Gather(&mysendLength, 1, MPI::INT, sendLengths, 1, MPI::INT, 0);
 
     if (my_rank == 0) {
-        sendStarts[0]=0;
-        for(int i=1; i<numprocs; i++) {
+        sendStarts[0] = 0;
+        for(int i=1; i < num_processors; i++) {
             sendStarts[i] = sendStarts[i-1]+sendLengths[i-1];
         }
     }
 
-    int sortedData[myDataSize];
-    MPI::COMM_WORLD.Gatherv(myData, mysendLength, MPI::INT, sortedData, sendLengths, sendStarts, MPI::INT, 0);
+    int sortedData[my_data_size];
+    MPI::COMM_WORLD.Gatherv(my_data, mysendLength, MPI::INT, sortedData, sendLengths, sendStarts, MPI::INT, 0);
 
     if (my_rank == 0) {
-        endwtime = MPI::Wtime();
-        cout << "wall clock time (seconds) = " << scientific << setprecision(4) << endwtime-startwtime << endl;
-
-        cout << "Data set " << issorted(sortedData,myDataSize) << " sorted:" << endl;
+        end_t = MPI::Wtime();
+        cout << "wall clock time (seconds) = " << scientific << setprecision(4) << end_t-start_t << endl;
+        cout << "Data set " << issorted(sortedData,my_data_size) << " sorted:" << endl;
     }
 
     MPI::Finalize();
