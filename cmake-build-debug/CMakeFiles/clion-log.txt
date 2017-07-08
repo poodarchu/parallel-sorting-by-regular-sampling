@@ -1,0 +1,6 @@
+/Applications/CLion.app/Contents/bin/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /Users/poodar/Developments/Cpp/CCLProjects/parallel-sorting-by-regular-sampling
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /Users/poodar/Developments/Cpp/CCLProjects/parallel-sorting-by-regular-sampling/cmake-build-debug
+Cannot get compiler information for configuration Debug:
+	Cannot run program "/opt/openmpi/bin/mpicc;-fopenmp" (in directory "/Users/poodar/Developments/Cpp/CCLProjects/parallel-sorting-by-regular-sampling/cmake-build-debug"): error=2, No such file or directory

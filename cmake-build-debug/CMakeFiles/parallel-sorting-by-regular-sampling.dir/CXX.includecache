@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/poodar/Developments/Cpp/CCLProjects/parallel-sorting-by-regular-sampling/mpi_psrs.cpp
+iostream
+-
+mpi.h
+-
+
+/Users/poodar/Developments/Cpp/CCLProjects/parallel-sorting-by-regular-sampling/omp_psrs.cpp
+iostream
+-
+omp.h
+-
+
