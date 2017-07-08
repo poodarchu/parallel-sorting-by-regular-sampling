@@ -15,8 +15,6 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
     int my_rank, num_processors;
-    int thread_count;
-
     double start_t = 0.0, end_t;
 
     MPI_Init(argc, argv);
@@ -24,10 +22,6 @@ int main(int argc, char* argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &num_processors);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    thread_count = num_processors * 2;
-
-    //		 -DS nnnn to set my_data_size
-    //		 -SR nnnn to set random_seed
     int random_seed = 1000;
     int my_data_size = 4000;
     for(int i=0; i<argc; i++) {
